@@ -1,0 +1,79 @@
+// prisma/schema.prisma
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id            Int       @id @default(autoincrement())
+  email         String    @unique
+  password      String
+  name          String
+  birthDate     DateTime  @map("birth_date")
+  age           Int
+  gender        Gender
+  profilePicture String?   @map("profile_picture")
+  bio           String?   @db.Text
+  createdAt     DateTime  @default(now()) @map("created_at")
+  posts         Post[]    // ความสัมพันธ์: ผู้ใช้สามารถมีหลายโพสต์
+  likes         Like[]    // ความสัมพันธ์: ผู้ใช้สามารถกดไลค์หลายโพสต์
+  comments      Comment[] // ความสัมพันธ์: ผู้ใช้สามารถคอมเมนต์หลายโพสต์
+
+  @@map("users")
+}
+
+model Post {
+  id            Int       @id @default(autoincrement())
+  userId        Int       @map("user_id")
+  user          User      @relation(fields: [userId], references: [id])
+  content       String?   @db.Text
+  createdAt     DateTime  @default(now()) @map("created_at")
+  images        PostImage[] // ความสัมพันธ์: โพสต์สามารถมีหลายรูปภาพ
+  likes         Like[]    // ความสัมพันธ์: โพสต์สามารถถูกกดไลค์
+  comments      Comment[] // ความสัมพันธ์: โพสต์สามารถมีหลายคอมเมนต์
+
+  @@map("posts")
+}
+
+model PostImage {
+  id            Int       @id @default(autoincrement())
+  postId        Int       @map("post_id")
+  post          Post      @relation(fields: [postId], references: [id])
+  imageUrl      String    @map("image_url")
+
+  @@map("post_images")
+}
+
+model Like {
+  id            Int       @id @default(autoincrement())
+  postId        Int       @map("post_id")
+  post          Post      @relation(fields: [postId], references: [id])
+  userId        Int       @map("user_id")
+  user          User      @relation(fields: [userId], references: [id])
+  createdAt     DateTime  @default(now()) @map("created_at")
+
+  @@unique([postId, userId]) // ป้องกันการกดไลค์ซ้ำ
+  @@map("likes")
+}
+
+model Comment {
+  id            Int       @id @default(autoincrement())
+  postId        Int       @map("post_id")
+  post          Post      @relation(fields: [postId], references: [id])
+  userId        Int       @map("user_id")
+  user          User      @relation(fields: [userId], references: [id])
+  content       String    @db.Text
+  createdAt     DateTime  @default(now()) @map("created_at")
+
+  @@map("comments")
+}
+
+enum Gender {
+  MALE
+  FEMALE
+  OTHER
+}
